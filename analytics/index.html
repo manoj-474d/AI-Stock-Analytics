@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Stock Analytics & Simulation — Real-time Forecasting</title>
+    <meta name="description" content="AI-powered stock analytics, 30-day ML price forecasting, and market simulation dashboard with live Yahoo Finance data.">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Ambient background glows -->
+    <div class="bg-glow-container">
+        <div class="bg-glow-blob blob-1"></div>
+        <div class="bg-glow-blob blob-2"></div>
+        <div class="bg-glow-blob blob-3"></div>
+    </div>
+
+    <!-- ====================================
+         1. Authentication Page Panel
+    ===================================== -->
+    <div class="auth-page" id="authPage">
+
+        <!-- Login Sub-card -->
+        <div class="auth-card" id="loginForm">
+            <div class="brand-header">
+                <div class="brand-icon-wrap">&#128200;</div>
+                <h1 class="brand-logo">AI Stock<span> Analytics</span></h1>
+                <p class="brand-subtitle">AI-Powered Predictions &amp; Sandbox Trading Simulator</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="loginUser">Username</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">&#128100;</span>
+                    <input class="input-field with-icon" type="text" id="loginUser" placeholder="Enter username" value="demouser">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="loginPass">Password</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">&#128274;</span>
+                    <input class="input-field with-icon" type="password" id="loginPass" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" value="password123">
+                </div>
+            </div>
+
+            <div class="error-message" id="loginError"></div>
+
+            <button class="btn-premium" id="btnDoLogin">
+                <span class="btn-text">Access Dashboard</span>
+                <span class="btn-arrow">&#8594;</span>
+            </button>
+
+            <div class="auth-footer">
+                New user? <a href="#" class="auth-link" id="toRegister">Create account</a>
+            </div>
+        </div>
+
+        <!-- Registration Sub-card -->
+        <div class="auth-card" id="registerForm" style="display: none;">
+            <div class="brand-header">
+                <div class="brand-icon-wrap">&#128200;</div>
+                <h1 class="brand-logo">AI Stock<span> Analytics</span></h1>
+                <p class="brand-subtitle">Register a simulated trading account</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="regUser">Choose Username</label>
+                <input class="input-field" type="text" id="regUser" placeholder="e.g. trader_pro">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="regPass">Choose Password</label>
+                <input class="input-field" type="password" id="regPass" placeholder="Min. 5 characters">
+            </div>
+
+            <div class="error-message" id="regError"></div>
+
+            <button class="btn-premium" id="btnDoRegister">
+                <span class="btn-text">Create Account</span>
+                <span class="btn-arrow">&#8594;</span>
+            </button>
+
+            <div class="auth-footer">
+                Already registered? <a href="#" class="auth-link" id="toLogin">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================
+         2. Main Dashboard Panel
+    ===================================== -->
+    <div class="dashboard-wrapper" id="dashboardPage">
+
+        <!-- Sticky Navigation Bar -->
+        <nav class="dashboard-nav">
+            <div class="nav-brand">
+                <span class="nav-brand-icon">&#128200;</span>
+                <h1 class="brand-logo nav-brand-text">AI Stock<span> Analytics</span></h1>
+            </div>
+
+            <div class="nav-center">
+                <div class="live-ticker-strip" id="liveTickerStrip">
+                    <span class="ticker-loading">&#9203; Loading live prices...</span>
+                </div>
+            </div>
+
+            <div class="nav-user">
+                <button class="btn-icon" id="btnShareNav" onclick="copyClientShareLink()" title="Copy shareable link for clients" style="border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">
+                    <span>&#128279;</span> Share Link
+                </button>
+                <button class="btn-icon admin-nav-btn" id="btnGoAdmin" style="display: none;" onclick="showAdminPage()">
+                    &#9881;&#65039; Admin
+                </button>
+                <div class="user-avatar" id="userInitial">U</div>
+                <span id="userDisplayName" class="nav-username">User</span>
+                <button class="btn-icon" id="btnLogout">
+                    <span>&#128682;</span> Logout
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Workspace -->
+        <main class="dashboard-container">
+
+            <!-- KPI Stats Row -->
+            <section class="overview-stats" id="kpiRow">
+
+                <div class="stat-card card-primary">
+                    <div class="stat-card-inner">
+                        <div class="stat-icon">&#128176;</div>
+                        <div class="stat-content">
+                            <div class="stat-title">Current Price</div>
+                            <div class="stat-val" id="cardPriceToday">&#8377;0.00</div>
+                            <div class="stat-subtext">
+                                <span id="cardChangePercent" class="trend-indicator">0.00%</span>
+                                <span class="stat-label">today</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card card-forecast">
+                    <div class="stat-card-inner">
+                        <div class="stat-icon">&#128302;</div>
+                        <div class="stat-content">
+                            <div class="stat-title">30-Day ML Forecast</div>
+                            <div class="stat-val" id="cardPriceForecast">&#8377;0.00</div>
+                            <div class="stat-subtext">
+                                <span>Change: </span>
+                                <span id="cardChangePrice" class="stat-change">&#8377;0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card card-signal">
+                    <div class="stat-card-inner">
+                        <div class="stat-icon">&#128202;</div>
+                        <div class="stat-content">
+                            <div class="stat-title">AI Signal</div>
+                            <div class="stat-val" id="cardSignalVal" style="font-size:1.4rem;">&#8212;</div>
+                            <div class="stat-subtext">
+                                <span id="cardRecommendation"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card card-confidence">
+                    <div class="stat-card-inner">
+                        <div class="stat-icon">&#127919;</div>
+                        <div class="stat-content">
+                            <div class="stat-title">Forecast Confidence</div>
+                            <div class="stat-val" id="cardConfidence">&#8212;</div>
+                            <div class="stat-subtext">
+                                <span id="cardConfidenceLabel" class="stat-label">based on trend</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Control + Chart Layout -->
+            <div class="dashboard-workspace">
+
+                <!-- Left Sidebar -->
+                <aside class="control-panel">
+                    <h2 class="panel-title">
+                        <span>&#9881;&#65039;</span> Engine Settings
+                    </h2>
+
+                    <div class="form-group" style="position: relative;">
+                        <label class="form-label">Search Company / Ticker</label>
+                        <div style="position: relative;">
+                            <input
+                                class="input-field"
+                                type="text"
+                                id="stockSearchInput"
+                                placeholder="e.g. Apple, RELIANCE, NVDA..."
+                                autocomplete="off"
+                                style="padding-right: 2.5rem;"
+                            />
+                            <span id="stockSearchSpinner" style="display:none; position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); font-size:1rem;">&#9203;</span>
+                        </div>
+                        <div id="stockSuggestions" style="
+                            display: none;
+                            position: absolute;
+                            top: 100%;
+                            left: 0; right: 0;
+                            background: var(--surface-raised, #1e2235);
+                            border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+                            border-radius: 0.5rem;
+                            z-index: 999;
+                            max-height: 260px;
+                            overflow-y: auto;
+                            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+                        "></div>
+                        <div id="selectedStockBadge" style="margin-top:0.5rem; font-size:0.8rem; color: var(--text-secondary); min-height:1.2em;"></div>
+                        <input type="hidden" id="stockSelect" value="AAPL">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Historical Data Range</label>
+                        <select class="form-select" id="dateSelect" onchange="runAnalysis()">
+                            <option value="90">Last 90 Days</option>
+                            <option value="180" selected>Last 180 Days</option>
+                            <option value="365">Last 365 Days</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-premium" onclick="runAnalysis()">
+                        &#128260; Run AI Analysis
+                    </button>
+
+                    <!-- Quick picks -->
+                    <div class="quick-picks">
+                        <div class="quick-picks-label">&#9889; Quick Pick</div>
+                        <div class="quick-picks-grid">
+                            <button class="qpick-btn" onclick="changeTicker('AAPL','Apple Inc.')">AAPL</button>
+                            <button class="qpick-btn" onclick="changeTicker('TSLA','Tesla Inc.')">TSLA</button>
+                            <button class="qpick-btn" onclick="changeTicker('NVDA','Nvidia Corp.')">NVDA</button>
+                            <button class="qpick-btn" onclick="changeTicker('RELIANCE.NS','Reliance Industries')">RELIANCE</button>
+                            <button class="qpick-btn" onclick="changeTicker('TCS.NS','Tata Consultancy')">TCS</button>
+                            <button class="qpick-btn" onclick="changeTicker('INFY.NS','Infosys Ltd.')">INFY</button>
+                            <button class="qpick-btn" onclick="changeTicker('MSFT','Microsoft Corp.')">MSFT</button>
+                            <button class="qpick-btn" onclick="changeTicker('GOOGL','Alphabet Inc.')">GOOGL</button>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Chart Section -->
+                <section class="analysis-card">
+                    <div class="analysis-card-header">
+                        <h2 class="panel-title" style="border: none; margin: 0; padding: 0;">
+                            <span>&#128200;</span> <span id="chartStockLabel">30-Day Forecast Visualization</span>
+                        </h2>
+                        <div class="loading-pulse" id="pulseLoader">
+                            <div class="pulse-circle"></div>
+                            <div class="pulse-circle"></div>
+                            <div class="pulse-circle"></div>
+                            <span style="font-size:0.8rem; color: var(--text-secondary);">Fitting ML Model...</span>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper" id="forecastResults">
+                        <canvas id="predictionChart"></canvas>
+                    </div>
+                </section>
+            </div>
+
+            <!-- WHY WILL THIS STOCK CHANGE? Panel -->
+            <section class="forecast-reason-section" id="forecastReasonSection" style="display:none;">
+
+                <div class="forecast-reason-header">
+                    <div class="forecast-reason-title-block">
+                        <span class="forecast-reason-badge">&#129504; AI Insight</span>
+                        <h2 class="forecast-reason-title">Why Will This Stock Change?</h2>
+                        <p class="forecast-reason-subtitle">Exact factors driving the 30-day price forecast for <strong id="reasonStockName">&#8212;</strong></p>
+                    </div>
+                    <div class="forecast-signal-badge" id="forecastSignalBig">&#8212;</div>
+                </div>
+
+                <div class="reason-cards-grid">
+
+                    <div class="reason-card" id="rcTrend">
+                        <div class="reason-card-icon">&#128201;</div>
+                        <div class="reason-card-body">
+                            <div class="reason-card-label">Price Trend Momentum</div>
+                            <div class="reason-card-value" id="rcTrendVal">&#8212;</div>
+                            <div class="reason-card-desc" id="rcTrendDesc">Analyzing&#8230;</div>
+                        </div>
+                        <div class="reason-card-meter">
+                            <div class="reason-meter-bar" id="rcTrendMeter"></div>
+                        </div>
+                    </div>
+
+                    <div class="reason-card" id="rcVol">
+                        <div class="reason-card-icon">&#127754;</div>
+                        <div class="reason-card-body">
+                            <div class="reason-card-label">Price Volatility (30d &#963;)</div>
+                            <div class="reason-card-value" id="rcVolVal">&#8212;</div>
+                            <div class="reason-card-desc" id="rcVolDesc">Analyzing&#8230;</div>
+                        </div>
+                        <div class="reason-card-meter">
+                            <div class="reason-meter-bar" id="rcVolMeter"></div>
+                        </div>
+                    </div>
+
+                    <div class="reason-card" id="rcMom">
+                        <div class="reason-card-icon">&#9889;</div>
+                        <div class="reason-card-body">
+                            <div class="reason-card-label">7-Day Short Momentum</div>
+                            <div class="reason-card-value" id="rcMomVal">&#8212;</div>
+                            <div class="reason-card-desc" id="rcMomDesc">Analyzing&#8230;</div>
+                        </div>
+                        <div class="reason-card-meter">
+                            <div class="reason-meter-bar" id="rcMomMeter"></div>
+                        </div>
+                    </div>
+
+                    <div class="reason-card" id="rcSlope">
+                        <div class="reason-card-icon">&#128208;</div>
+                        <div class="reason-card-body">
+                            <div class="reason-card-label">Linear Regression Slope</div>
+                            <div class="reason-card-value" id="rcSlopeVal">&#8212;</div>
+                            <div class="reason-card-desc" id="rcSlopeDesc">Analyzing&#8230;</div>
+                        </div>
+                        <div class="reason-card-meter">
+                            <div class="reason-meter-bar" id="rcSlopeMeter"></div>
+                        </div>
+                    </div>
+
+                    <div class="reason-card" id="rc52">
+                        <div class="reason-card-icon">&#127956;&#65039;</div>
+                        <div class="reason-card-body">
+                            <div class="reason-card-label">Distance from 52-Week High</div>
+                            <div class="reason-card-value" id="rc52Val">&#8212;</div>
+                            <div class="reason-card-desc" id="rc52Desc">Analyzing&#8230;</div>
+                        </div>
+                        <div class="reason-card-meter">
+                            <div class="reason-meter-bar" id="rc52Meter"></div>
+                        </div>
+                    </div>
+
+                    <div class="reason-card" id="rcRisk">
+                        <div class="reason-card-icon">&#9888;&#65039;</div>
+                        <div class="reason-card-body">
+                            <div class="reason-card-label">Investment Risk Score</div>
+                            <div class="reason-card-value" id="rcRiskVal">&#8212;</div>
+                            <div class="reason-card-desc" id="rcRiskDesc">Analyzing&#8230;</div>
+                        </div>
+                        <div class="reason-card-meter">
+                            <div class="reason-meter-bar" id="rcRiskMeter"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- AI Verdict Box -->
+                <div class="verdict-box" id="verdictBox">
+                    <div class="verdict-icon" id="verdictIcon">&#129504;</div>
+                    <div class="verdict-content">
+                        <div class="verdict-title">AI Verdict Summary</div>
+                        <div class="verdict-text" id="verdictText">Run AI Analysis to see a detailed explanation of why the stock price is expected to change over the next 30 days.</div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Market Watchlist Table -->
+            <section class="table-panel">
+                <div class="table-header">
+                    <div>
+                        <h2 class="table-title">&#127757; Market Overview Watchlist</h2>
+                        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">Click any row to instantly analyze that stock</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn-icon" onclick="copyClientShareLink()" title="Generate shareable link for clients" style="border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">
+                            &#128279; Share Link
+                        </button>
+                        <button class="btn-icon export-btn" onclick="exportCSVReport()">
+                            &#128229; Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="market-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol &amp; Company</th>
+                                <th>Current Price</th>
+                                <th>Prev. Close</th>
+                                <th>Net Change</th>
+                                <th>% Change</th>
+                                <th>Signal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="marketOverviewTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <footer class="footer-text">
+                &#128225; Live Data: All historical prices and forecasts are fetched in real-time from <strong>Yahoo Finance</strong> via the backend.
+                Predictions use a Linear Regression ML model trained on live data. All values are converted to INR for display.
+                <br>
+                &#9888;&#65039; Simulation Disclosure: Do not make real-world investment decisions based on this software.
+            </footer>
+        </main>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-page-wrapper" id="adminPage">
+        <nav class="dashboard-nav">
+            <div class="nav-brand">
+                <span class="nav-brand-icon">&#128200;</span>
+                <h1 class="brand-logo nav-brand-text">AI Stock<span> Analytics</span></h1>
+            </div>
+            <div class="nav-user">
+                <button class="btn-icon" onclick="exitAdminPage()">&#11013;&#65039; Dashboard</button>
+                <div class="user-avatar" style="background: var(--accent-gradient);">A</div>
+                <span style="font-weight: 500; font-size: 0.95rem;">Administrator</span>
+                <button class="btn-icon" id="btnAdminLogout"><span>&#128682;</span> Logout</button>
+            </div>
+        </nav>
+        <main class="dashboard-container">
+            <section class="overview-stats">
+                <div class="stat-card card-primary">
+                    <div class="stat-card-inner">
+                        <div class="stat-icon">&#128101;</div>
+                        <div class="stat-content">
+                            <div class="stat-title">Registered Accounts</div>
+                            <div class="stat-val" id="adminTotalUsers">0</div>
+                            <div class="stat-subtext"><span class="stat-label">Users signed up</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card card-forecast">
+                    <div class="stat-card-inner">
+                        <div class="stat-icon">&#127760;</div>
+                        <div class="stat-content">
+                            <div class="stat-title">Total Visits Logged</div>
+                            <div class="stat-val" id="adminTotalLogins">0</div>
+                            <div class="stat-subtext"><span class="stat-label">All page visits recorded</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card card-signal">
+                    <div class="stat-card-inner">
+                        <div class="stat-icon">&#128270;</div>
+                        <div class="stat-content">
+                            <div class="stat-title">Unique IP Addresses</div>
+                            <div class="stat-val" id="adminTotalCapital">0</div>
+                            <div class="stat-subtext"><span class="stat-label">Distinct visitors by IP</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="admin-grid">
+                <div class="table-panel" style="grid-column: 1 / -1;">
+                    <div class="table-header">
+                        <h2 class="table-title">&#127760; Real Visitor Log</h2>
+                        <button class="btn-danger-action" id="btnClearLogsBtn">&#128465;&#65039; Clear Visitor Logs</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="market-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>IP Address</th>
+                                    <th>Visit Time</th>
+                                    <th>Browser / OS</th>
+                                    <th>Page</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminLogsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom Stock Modal -->
+    <div class="modal-overlay" id="customStockModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Custom Stock</h3>
+                <button class="btn-close" onclick="closeCustomStockModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customSym">Stock Ticker Symbol</label>
+                <input class="input-field" type="text" id="customSym" placeholder="e.g. INFY2, GOOGL2">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customName">Company Name</label>
+                <input class="input-field" type="text" id="customName" placeholder="e.g. Infosys Premium">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customPrice">Initial Price (INR)</label>
+                <input class="input-field" type="number" id="customPrice" placeholder="e.g. 500" value="100">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customTrend">Drift Strength (-50 to +50)</label>
+                <input class="input-field" type="number" id="customTrend" placeholder="High value means growth" value="5" min="-50" max="50">
+            </div>
+            <button class="btn-premium" onclick="createCustomStock()">Launch Simulation</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
